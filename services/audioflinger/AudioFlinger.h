@@ -240,10 +240,11 @@ public:
                                 uint32_t flags);
 
 #ifdef QCOM_HARDWARE
-    void applyEffectsOn(void *token,
+    bool applyEffectsOn(void *token,
                         int16_t *buffer1,
                         int16_t *buffer2,
-                        int size);
+                        int size,
+                        bool force);
 #endif
 
     // end of IAudioFlinger interface
@@ -422,6 +423,9 @@ private:
                                         audio_format_t format,
                                         audio_channel_mask_t channelMask,
                                         int frameCount,
+#ifdef QCOM_ENHANCED_AUDIO
+                                        uint32_t flags,
+#endif
                                         const sp<IMemory>& sharedBuffer,
                                         int sessionId);
             virtual             ~TrackBase();
@@ -501,6 +505,9 @@ private:
                                 // support dynamic rates, the current value is in control block
             const audio_format_t mFormat;
             bool                mStepServerFailed;
+#ifdef QCOM_ENHANCED_AUDIO
+            uint32_t            mFlags;
+#endif
             const int           mSessionId;
             uint8_t             mChannelCount;
             audio_channel_mask_t mChannelMask;
@@ -1478,6 +1485,7 @@ private:
         };
         List<BufferInfo> mBufPool;
         List<BufferInfo> mEffectsPool;
+        void *mEffectsThreadScratchBuffer;
 
         void allocateBufPool();
         void deallocateBufPool();
@@ -1516,7 +1524,8 @@ private:
         sp<AudioFlinger> mAudioFlinger;
         sp<AudioFlingerDirectTrackClient> mAudioFlingerClient;
 
-	void clearPowerManager();
+        void clearPowerManager();
+
         class PMDeathRecipient : public IBinder::DeathRecipient {
             public:
                             PMDeathRecipient(void *obj){parentClass = (DirectAudioTrack *)obj;}
@@ -1587,6 +1596,9 @@ private:
                                         audio_format_t format,
                                         audio_channel_mask_t channelMask,
                                         int frameCount,
+#ifdef QCOM_ENHANCED_AUDIO
+                                        uint32_t flags,
+#endif
                                         int sessionId);
             virtual             ~RecordTrack();
 
@@ -1717,6 +1729,7 @@ private:
                 // when < 0, maximum frames to drop before starting capture even if sync event is
                 // not received
                 ssize_t                             mFramestoDrop;
+                int16_t                             mInputSource;
     };
 
     // server side of the client's IAudioRecord
